@@ -8,11 +8,11 @@ C++ OpenMP code.
 ### To install:
 
 	library(devtools)
-	devtools::install_github("meekj/sendUDP")
+	devtools::install_github("meekj/RsendUDP")
 
 ### Example Usage from R
 
-    library(sendUDP)
+    library(RsendUDP)
     library(stringr)
 
     message_string <- str_c(Sys.time(), ' function_name ', Sys.getpid(), ' A diagnostic message\n')
