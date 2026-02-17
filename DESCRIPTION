@@ -1,0 +1,15 @@
+Package: RsendUDP
+Type: Package
+Title: Send a message in a UDP packet from R
+Version: 0.0.4
+Date: 2026-02-17
+Authors@R: person("Jon", "Meek", role = c("aut", "cre"), email =
+        "meekjt@gmail.com")
+Description: A low overhead method to send messages. Originally for debugging parallel processing.
+URL: https://github.com/meekj/sendUDP
+BugReports: https://github.com/meekj/sendUDP/issues
+License: GPL (>= 2)
+Imports: Rcpp (>= 1.0.0)
+LinkingTo: Rcpp
+RoxygenNote: 7.3.3
+Encoding: UTF-8

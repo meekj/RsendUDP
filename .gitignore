@@ -1,0 +1,43 @@
+# R package build artifacts
+*.o
+*.so
+*.dll
+*.dylib
+
+# Rcpp compiled files
+src/*.o
+src/*.so
+src/*.dll
+src/*.dylib
+# RcppExports.cpp   # optional - some prefer to commit this
+
+# R check/build output
+*.Rcheck/
+*.tar.gz
+*.tgz
+
+# R session artifacts
+.Rhistory
+.RData
+.Rproj.user/
+.Ruserdata
+*~
+
+# roxygen2 / documentation build
+# (some prefer to commit man/ and NAMESPACE)
+# man/*.Rd       # only if auto-generated
+# NAMESPACE      # only if auto-generated
+
+# Byte-compiled / optimized files
+*.elc
+
+# OS files
+.DS_Store
+Thumbs.db
+
+.Rproj.user
+.Rhistory
+.RData
+.httr-oauth
+.DS_Store
+.quarto
