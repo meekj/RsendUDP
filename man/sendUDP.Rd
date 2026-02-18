@@ -2,10 +2,20 @@
 % Please edit documentation in R/RcppExports.R
 \name{sendUDP}
 \alias{sendUDP}
-\title{Send a message in a UDP packet from R. Returns status, 0 = no error}
+\title{Send a message in a UDP packet}
 \usage{
 sendUDP(serverIP, port, message)
 }
+\arguments{
+\item{serverIP}{Destination IP address}
+
+\item{port}{Destination port number}
+
+\item{message}{Message string}
+}
+\value{
+success_status
+}
 \description{
-Send a message in a UDP packet from R. Returns status, 0 = no error
+Send a message in a UDP packet
 }

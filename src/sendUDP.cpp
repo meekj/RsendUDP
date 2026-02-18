@@ -5,10 +5,16 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <Rcpp.h>
+using namespace Rcpp;
 
+// [[Rcpp::interfaces(r, cpp)]]
 
-//' Send a message in a UDP packet from R. Returns status, 0 = no error
+//' Send a message in a UDP packet
 //'
+//' @param serverIP Destination IP address
+//' @param port Destination port number
+//' @param message Message string
+//' @return success_status
 //' @export
 // [[Rcpp::export]]
 int sendUDP(std::string serverIP, int port, std::string message) {

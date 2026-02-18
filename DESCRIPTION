@@ -1,7 +1,7 @@
 Package: RsendUDP
 Type: Package
 Title: Send a message in a UDP packet from R
-Version: 0.0.4
+Version: 0.0.7
 Date: 2026-02-17
 Authors@R: person("Jon", "Meek", role = c("aut", "cre"), email =
         "meekjt@gmail.com")
