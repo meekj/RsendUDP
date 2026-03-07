@@ -5,8 +5,11 @@ Send a message in a UDP packet from R
 
 Sends a message in a single UDP packet for debugging and diagnostic
 purposes. The original use was to debug parallel processing in R and,
-using a similar function for C++ OpenMP code (see the package inst
-directory).
+using a similar function for C++ OpenMP code.
+
+A C++ OpenMP example is in the package inst directory. Use
+system.file(‘omp-udp.cpp’, package = ‘RsendUDP’) to get the path to the
+example after package installation.
 
 ### To install:
 
@@ -205,8 +208,7 @@ str_c('UDP Overhead: ', formatC(ts_list$udp_overhead_time, digits = 3, format = 
 ``` r
 library(Rcpp)
 
-codeFile <- '~/lab/R/omp-udp.cpp'
-
+codeFile <- system.file('omp-udp.cpp', package = 'RsendUDP')
 sourceCpp(rebuild = TRUE, showOutput = TRUE, file=codeFile)
 
 num_threads <- 6
