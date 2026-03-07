@@ -1,17 +1,17 @@
-# RsendUDP
-
+---
+title: "RsendUDP"
+format: gfm
+---
 
 Send a message in a UDP packet from R
 
-Sends a message in a single UDP packet for debugging and diagnostic
-purposes. The original use was to debug parallel processing in R and,
-using a similar function for C++ OpenMP code (see the package inst
-directory).
+Sends a message in a single UDP packet for debugging and diagnostic purposes.
+The original use was to debug parallel processing in R and, using a similar function for C++ OpenMP code (see the package inst directory).
 
 ### To install:
 
-    library(devtools)
-    devtools::install_github("meekj/RsendUDP")
+	library(devtools)
+	devtools::install_github("meekj/RsendUDP")
 
 ### Simple Example Usage from R
 
@@ -21,8 +21,8 @@ directory).
     message_string <- str_c(Sys.time(), ' function_name ', Sys.getpid(), ' A diagnostic message\n')
     sendUDP_stat <- sendUDP("127.0.0.1", 1800, message_string)
 
-127.0.0.1 is the localhost IP address, the IP address of another system
-on your network could also be used 1800 is the port number
+127.0.0.1 is the localhost IP address, the IP address of another system on your network could also be used
+1800 is the port number
 
 sendUDP returns zero if the packet was sent successfully.
 
@@ -33,14 +33,16 @@ Collect messages in a Linux terminal:
 nc on MacOS prints only the first packet, use ncat (from nmap) instead:
 
     ncat -lku 1800
-
+    
 This package should have a listenUDP function.
 
 This version of sendUDP probably does not work on Windows.
 
 ### Parallel Processing in R Diagnostic Example
 
-``` r
+```{r}
+#| eval: false
+
 library(future)
 library(future.apply)
 library(RsendUDP) # Send UDP packets with timing and thread data
@@ -88,13 +90,14 @@ sU <- sendUDP("127.0.0.1", 1800, str_c(Sys.time(), ' post ', Sys.getpid(), ' End
 sU <- sendUDP("127.0.0.1", 1800, 'Done\n')
 
 result_sum # Don't print results in a section that is being timed
-```
 
+```
 #### Process the diagnostic / timing results
 
-Copy / paste results collected with “nc -lku 1800” in a terminal:
+Copy / paste results collected with "nc -lku 1800" in a terminal:
 
-``` r
+```{r}
+#| message: false
 library(dplyr)
 library(readr)
 library(tidyr)
@@ -173,36 +176,22 @@ ts_list <- gen_thread_summary(threads, 'future_example')
 
 Title <- 'plan(future.mirai::mirai_multisession)'
 plot_r_threads(ts_list$thread_summary, Title)
-```
 
-![](README_files/figure-commonmark/unnamed-chunk-2-1.png)
-
-``` r
 ts_list$thread_summary
-```
-
-    # A tibble: 8 × 4
-      func             Start     End     dt
-      <fct>            <dbl>   <dbl>  <dbl>
-    1 prep               0     0.687  0.687
-    2 future_example_1  53.8 105.    50.9  
-    3 future_example_2  59.0 110.    51.1  
-    4 future_example_3  61.1 112.    50.5  
-    5 future_example_4  61.3 112.    50.6  
-    6 future_example_5  62.6 113.    50.5  
-    7 future_example_6  64.9 115.    50.6  
-    8 post             128.  131.     3.28 
-
-``` r
 str_c('UDP Overhead: ', formatC(ts_list$udp_overhead_time, digits = 3, format = 'f'), ' ms   ',
       'First thread: ', formatC(ts_list$first_thread, digits = 3, format = 'f'), ' ms')
+                  
+
 ```
 
-    [1] "UDP Overhead: 0.687 ms   First thread: 52.741 ms"
+
 
 ### Parallel Processing with Rcpp and OpenMP Diagnostic Example
 
-``` r
+
+```{r}
+#| eval: false
+
 library(Rcpp)
 
 codeFile <- '~/lab/R/omp-udp.cpp'
@@ -225,16 +214,17 @@ res
 
 ## Send a data complete message, could trigger diagnostic data processing
 sU <- sendUDP("127.0.0.1", 1800, 'Done\n')
+
 ```
 
 #### Process the diagnostic / timing results
 
-Raw timestamps are nanoseconds and are converted to milliseconds for
-analysis.
+Raw timestamps are nanoseconds and are converted to milliseconds for analysis.
 
-Copy / paste results collected with “nc -lku 1800” in a terminal:
+Copy / paste results collected with "nc -lku 1800" in a terminal:
 
-``` r
+```{r}
+
 threads <- read_delim('time | thread | state
 1772142185910050155 | 0 | Zero
 1772142185910315684 | 0 | Zero
@@ -282,27 +272,15 @@ plot_omp_threads <- function(thread_sum, title) {
 ts_list <- gen_thread_summary_ns(threads)
 
 ts_list$udp_overhead_time
-```
 
-    [1] 0.265216
-
-``` r
 ts_list$thread_summary
-```
 
-    # A tibble: 6 × 4
-      thread Start   End func    
-       <dbl> <dbl> <dbl> <chr>   
-    1      0 0.294  50.5 Thread 0
-    2      1 0.325  50.5 Thread 1
-    3      2 0.372  50.6 Thread 2
-    4      3 0.374  50.5 Thread 3
-    5      4 0.377  50.6 Thread 4
-    6      5 0.497  50.6 Thread 5
-
-``` r
 Title <- 'sendUDP test from C++ OpenMP'
 plot_omp_threads(ts_list$thread_summary, Title)
+
 ```
 
-![](README_files/figure-commonmark/unnamed-chunk-4-1.png)
+
+
+
+
