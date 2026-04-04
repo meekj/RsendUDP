@@ -44,58 +44,75 @@ This version of sendUDP probably does not work on Windows.
 ### Parallel Processing in R Diagnostic Example
 
 ``` r
-library(future)
-library(future.apply)
+## Claude code + posit-dev-skills assisted
+library(mirai)
 library(RsendUDP) # Send UDP packets with timing and thread data
 
-## Sample function to run multiple copies in parallel
-future_example <- function(sleep_time) {
-    sU <- sendUDP("127.0.0.1", 1800, str_c(Sys.time(), ' future_example ', Sys.getpid(), ' Start\n'))
-    Sys.sleep(sleep_time)
-    sU <- sendUDP("127.0.0.1", 1800, str_c(Sys.time(), ' future_example ', Sys.getpid(), ' End\n'))
-    return(1L)
+## Sample function - mirai tasks get only the named args they need (no closure capture)
+parallel_sleep_test <- function(sleep_time, num_threads, ip_address, port_number) {
+    sU <- 0
+    sU <- sU + RsendUDP::sendUDP(ip_address, port_number, '\ndate time func pid state\n')
+
+    ## Dummy prep - measures sendUDP overhead
+    sU <- sU + RsendUDP::sendUDP(ip_address, port_number, str_c(Sys.time(), ' prep ', Sys.getpid(), ' Start\n'))
+    sU <- sU + RsendUDP::sendUDP(ip_address, port_number, str_c(Sys.time(), ' prep ', Sys.getpid(), ' End\n'))
+
+    ## Overall parallel start
+    sU <- sU + RsendUDP::sendUDP(ip_address, port_number, str_c(Sys.time(), ' process ', Sys.getpid(), ' Start\n'))
+
+    ## Dispatch all tasks first, then collect — minimises time between dispatches
+    tasks <- lapply(seq_len(num_threads), function(i) {
+        mirai(
+            {
+                sU <- RsendUDP::sendUDP(ip, port, paste0(Sys.time(), ' future_example ', Sys.getpid(), ' Start\n'))
+                Sys.sleep(st)
+                sU <- RsendUDP::sendUDP(ip, port, paste0(Sys.time(), ' future_example ', Sys.getpid(), ' End\n'))
+                1L
+            },
+            st   = sleep_time,
+            ip   = ip_address,
+            port = port_number
+        )
+    })
+
+    ## Collect results
+    results <- lapply(tasks, \(m) m[])
+
+    sU <- sU + RsendUDP::sendUDP(ip_address, port_number, str_c(Sys.time(), ' process ', Sys.getpid(), ' End\n'))
+
+    ## Post processing
+    sU <- sU + RsendUDP::sendUDP(ip_address, port_number, str_c(Sys.time(), ' post ', Sys.getpid(), ' Start\n'))
+    result_sum <- Reduce(`+`, results, 0L)
+    sU <- sU + RsendUDP::sendUDP(ip_address, port_number, str_c(Sys.time(), ' post ', Sys.getpid(), ' End\n'))
+
+    sU <- sU + RsendUDP::sendUDP(ip_address, port_number, 'Done\n')
+
+    return(list(threads = result_sum, UDPres = sU))
 }
 
-sleep1      <- 0.050 # 50 milliseconds
+## First start the UDP packet collection code in process-udp.R
+
 num_threads <- 6
 
-## Send the data header
-sU <- sendUDP("127.0.0.1", 1800, '\ndate time func pid state\n')
+## Start persistent daemons, pre-loading packages so they are NOT re-exported per call.
+## dispatcher = FALSE is lower latency when you always submit exactly num_threads tasks.
+daemons(num_threads, dispatcher = FALSE)
 
-plan(future.mirai::mirai_multisession)
+## Pre-load packages on all workers once via broadcast — not re-exported per task.
+everywhere(library(RsendUDP, quietly = TRUE))
 
-## Dummy data prep - provides a measure of sendUDP overhead time
-sU <- sendUDP("127.0.0.1", 1800, str_c(Sys.time(), ' prep ', Sys.getpid(), ' Start\n'))
-sU <- sendUDP("127.0.0.1", 1800, str_c(Sys.time(), ' prep ', Sys.getpid(), ' End\n'))
+sleep1 <- 0.050 # 50 milliseconds
 
-## Overall parallel processing time - Start
-sU <- sendUDP("127.0.0.1", 1800, str_c(Sys.time(), ' process ', Sys.getpid(), ' Start\n'))
+parallel_sleep_test(sleep1, num_threads, '127.0.0.1', 1800)
 
-## Run future_example num_threads times, in parallel
-results_list <- future_lapply(1:num_threads,
-                              function(thread) { future_example(sleep1) },
-                              future.packages = c('RsendUDP'))
-
-## Overall parallel processing time - End
-sU <- sendUDP("127.0.0.1", 1800, str_c(Sys.time(), ' process ', Sys.getpid(), ' End\n'))
-
-## Collect results - post processing
-sU <- sendUDP("127.0.0.1", 1800, str_c(Sys.time(), ' post ', Sys.getpid(), ' Start\n'))
-result_sum <- 0
-for (thread_result in 1:num_threads) {
-    result_sum <- result_sum +  results_list[[thread_result]]
-}
-sU <- sendUDP("127.0.0.1", 1800, str_c(Sys.time(), ' post ', Sys.getpid(), ' End\n'))
-
-## Send a data complete message, could trigger diagnostic data processing
-sU <- sendUDP("127.0.0.1", 1800, 'Done\n')
-
-result_sum # Don't print results in a section that is being timed
+## Clean up daemons when done
+## daemons(0)
 ```
 
 #### Process the diagnostic / timing results
 
-Copy / paste results collected with “nc -lku 1800” in a terminal:
+See process-udp.R in the inst directory, or copy / paste results
+collected with “nc -lku 1800” in a terminal:
 
 ``` r
 library(dplyr)
@@ -105,26 +122,26 @@ library(stringr)
 library(forcats)
 library(ggplot2)
 
-Title <- 'plan(future.mirai::mirai_multisession)'
+Title <- '{mirai} Sleep Test Diagnostic'
 threads <- read_table('date time func pid state
-2026-02-26 22:55:12.065301 prep 18652 Start
-2026-02-26 22:55:12.065988 prep 18652 End
-2026-02-26 22:55:12.066391 process 18652 Start
-2026-02-26 22:55:12.119132 future_example 19408 Start
-2026-02-26 22:55:12.124278 future_example 19364 Start
-2026-02-26 22:55:12.126396 future_example 19504 Start
-2026-02-26 22:55:12.126561 future_example 19371 Start
-2026-02-26 22:55:12.127924 future_example 19397 Start
-2026-02-26 22:55:12.130166 future_example 19384 Start
-2026-02-26 22:55:12.170069 future_example 19408 End
-2026-02-26 22:55:12.17539 future_example 19364 End
-2026-02-26 22:55:12.176883 future_example 19504 End
-2026-02-26 22:55:12.177115 future_example 19371 End
-2026-02-26 22:55:12.178376 future_example 19397 End
-2026-02-26 22:55:12.180791 future_example 19384 End
-2026-02-26 22:55:12.192683 process 18652 End
-2026-02-26 22:55:12.193324 post 18652 Start
-2026-02-26 22:55:12.196603 post 18652 End
+2026-04-04 01:59:23.640762 prep 659577 Start
+2026-04-04 01:59:23.641291 prep 659577 End
+2026-04-04 01:59:23.641563 process 659577 Start
+2026-04-04 01:59:23.6423 future_example 3075982 Start
+2026-04-04 01:59:23.642483 future_example 3075997 Start
+2026-04-04 01:59:23.64262 future_example 3076073 Start
+2026-04-04 01:59:23.642683 future_example 3076120 Start
+2026-04-04 01:59:23.642817 future_example 3076137 Start
+2026-04-04 01:59:23.643005 future_example 3076183 Start
+2026-04-04 01:59:23.692602 future_example 3075982 End
+2026-04-04 01:59:23.692729 future_example 3075997 End
+2026-04-04 01:59:23.692911 future_example 3076120 End
+2026-04-04 01:59:23.692889 future_example 3076073 End
+2026-04-04 01:59:23.693055 future_example 3076137 End
+2026-04-04 01:59:23.693246 future_example 3076183 End
+2026-04-04 01:59:23.6935 process 659577 End
+2026-04-04 01:59:23.694066 post 659577 Start
+2026-04-04 01:59:23.694514 post 659577 End
 ',col_types = 'cccnc')
 
 theme_jm1 <- theme_bw() + # A decent theme for HTML output
@@ -174,7 +191,6 @@ plot_r_threads <- function(thread_sum, title) {
 
 ts_list <- gen_thread_summary(threads, 'future_example')
 
-Title <- 'plan(future.mirai::mirai_multisession)'
 plot_r_threads(ts_list$thread_summary, Title)
 ```
 
@@ -185,23 +201,23 @@ ts_list$thread_summary
 ```
 
     # A tibble: 8 × 4
-      func             Start     End     dt
-      <fct>            <dbl>   <dbl>  <dbl>
-    1 prep               0     0.687  0.687
-    2 future_example_1  53.8 105.    50.9  
-    3 future_example_2  59.0 110.    51.1  
-    4 future_example_3  61.1 112.    50.5  
-    5 future_example_4  61.3 112.    50.6  
-    6 future_example_5  62.6 113.    50.5  
-    7 future_example_6  64.9 115.    50.6  
-    8 post             128.  131.     3.28 
+      func             Start    End     dt
+      <fct>            <dbl>  <dbl>  <dbl>
+    1 prep              0     0.529  0.529
+    2 future_example_1  1.54 51.8   50.3  
+    3 future_example_2  1.72 52.0   50.2  
+    4 future_example_3  1.86 52.1   50.3  
+    5 future_example_4  1.92 52.1   50.2  
+    6 future_example_5  2.05 52.3   50.2  
+    7 future_example_6  2.24 52.5   50.2  
+    8 post             53.3  53.8    0.448
 
 ``` r
 str_c('UDP Overhead: ', formatC(ts_list$udp_overhead_time, digits = 3, format = 'f'), ' ms   ',
       'First thread: ', formatC(ts_list$first_thread, digits = 3, format = 'f'), ' ms')
 ```
 
-    [1] "UDP Overhead: 0.687 ms   First thread: 52.741 ms"
+    [1] "UDP Overhead: 0.529 ms   First thread: 0.737 ms"
 
 ### Parallel Processing with Rcpp and OpenMP Diagnostic Example
 
